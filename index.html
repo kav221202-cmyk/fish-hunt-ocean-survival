@@ -1,12 +1,10 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#061a35">
-  <meta name="description" content="Fish Hunt: Ocean Survival — an underwater survival game.">
-  <title>Fish Hunt | Ocean Survival</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071b36">
+  <title>Fish Hunt: Ocean Survival</title>
   <link rel="stylesheet" href="./styles/main.css">
   <script type="module" src="./src/main.js"></script>
 </head>
@@ -14,81 +12,74 @@
   <main class="app-shell">
     <header class="topbar">
       <a class="brand" href="./" aria-label="Fish Hunt home">
-        <span class="brand-icon">≈</span>
-        <span>FISH HUNT<span class="brand-subtitle">OCEAN SURVIVAL</span></span>
+        <span class="brand-mark" aria-hidden="true">🐠</span>
+        <span><strong>FISH HUNT</strong><small>OCEAN SURVIVAL</small></span>
       </a>
-      <span class="connection-status">
-        <span class="status-dot"></span>
-        LOCAL BUILD
-      </span>
+      <div class="status-pill"><span class="status-dot"></span><span id="statusText">READY TO DIVE</span></div>
     </header>
 
-    <section class="game-layout" aria-label="Game area">
-      <aside class="intro-panel">
-        <p class="eyebrow">THE OCEAN IS YOURS</p>
-        <h1>Survive the<br><span>deep blue.</span></h1>
-        <p class="description">
-          Collect food, avoid dangerous sea creatures and see how long
-          you can survive in the deep ocean.
-        </p>
-
-        <div class="objective">
-          <span class="objective-icon">✦</span>
-          <div>
-            <strong>Your mission</strong>
-            <p>Explore. Collect. Survive.</p>
-          </div>
-        </div>
-
-        <button id="start-button" class="primary-button">
-          Explore the ocean <span aria-hidden="true">→</span>
-        </button>
-        <p id="game-message" class="game-message" role="status">
-          Your adventure is about to begin.
-        </p>
-      </aside>
-
-      <section class="ocean-panel" aria-label="Ocean game preview">
-        <div class="ocean-topline">
-          <span>ZONE 01 / THE BLUE ABYSS</span>
-          <span class="live-indicator">● EXPLORATION</span>
-        </div>
-
-        <div class="hud">
-          <div><span>SCORE</span><strong id="score">0000</strong></div>
-          <div><span>TIME</span><strong id="timer">00:00</strong></div>
-          <div><span>LIVES</span><strong id="lives">♥ ♥ ♥</strong></div>
-        </div>
-
-        <div class="ocean-scene">
-          <div class="sun-glow"></div>
-          <span class="bubble bubble-one"></span>
-          <span class="bubble bubble-two"></span>
-          <span class="bubble bubble-three"></span>
-          <span class="fish fish-one" aria-hidden="true">🐠</span>
-          <span class="fish fish-two" aria-hidden="true">🐟</span>
-          <span class="fish fish-three" aria-hidden="true">🐡</span>
-          <span class="seaweed seaweed-one" aria-hidden="true">♆</span>
-          <span class="seaweed seaweed-two" aria-hidden="true">♆</span>
-
-          <div id="scene-overlay" class="scene-overlay">
-            <div class="play-emblem" aria-hidden="true">▶</div>
-            <p>YOUR ADVENTURE AWAITS</p>
-            <span>Press explore to begin</span>
-          </div>
-        </div>
-
-        <footer class="ocean-footer">
-          <span><span class="footer-dot"></span> UNDERWATER EXPEDITION</span>
-          <span>BUILD 0.1.0</span>
-        </footer>
-      </section>
+    <section class="intro">
+      <div class="eyebrow">THE DEEP BLUE AWAITS</div>
+      <h1>Survive the <span>current.</span></h1>
+      <p>Collect glowing food. Keep clear of predators. How long can you last beneath the waves?</p>
     </section>
 
-    <footer class="page-footer">
-      <span>FISH HUNT: OCEAN SURVIVAL</span>
-      <span>A COMPUTER SCIENCE PROJECT</span>
-    </footer>
+    <section class="game-layout" aria-label="Fish Hunt game">
+      <div class="game-panel">
+        <div class="hud" aria-label="Game statistics">
+          <div class="hud-stat"><span class="hud-label">SCORE</span><strong id="scoreValue">0000</strong></div>
+          <div class="hud-stat"><span class="hud-label">TIME LEFT</span><strong id="timeValue">60<span class="hud-unit">s</span></strong></div>
+          <div class="hud-stat health-stat"><span class="hud-label">HEALTH</span><strong id="healthValue" aria-label="3 lives">♥ ♥ ♥</strong></div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="gameCanvas" width="960" height="540" aria-label="Ocean game area" role="img"></canvas>
+          <div id="gameOverlay" class="game-overlay">
+            <div class="overlay-card">
+              <div id="overlayIcon" class="overlay-icon" aria-hidden="true">🌊</div>
+              <p id="overlayKicker" class="overlay-kicker">YOUR ADVENTURE STARTS HERE</p>
+              <h2 id="overlayTitle">Ready to dive?</h2>
+              <p id="overlayText">Collect the glowing pearls of food and dodge the hungry sharks. You have 60 seconds and 3 hearts.</p>
+              <button id="startButton" class="primary-button">Start swimming <span aria-hidden="true">→</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="game-footer">
+          <span><span class="keycap">W</span><span class="keycap">A</span><span class="keycap">S</span><span class="keycap">D</span> or arrow keys to swim</span>
+          <span class="footer-divider">•</span>
+          <span>Food <b class="food-dot">●</b> +10 points</span>
+          <span class="footer-divider">•</span>
+          <span>Shark <b class="danger-dot">●</b> −1 heart</span>
+        </div>
+        <div class="touch-controls" aria-label="Touch movement controls">
+          <button type="button" data-direction="up" aria-label="Swim up">↑</button>
+          <div class="touch-mid">
+            <button type="button" data-direction="left" aria-label="Swim left">←</button>
+            <button type="button" data-direction="down" aria-label="Swim down">↓</button>
+            <button type="button" data-direction="right" aria-label="Swim right">→</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side-panel">
+        <div class="side-card mission-card">
+          <div class="card-icon">✦</div>
+          <p class="card-label">YOUR MISSION</p>
+          <h2>Make every second count.</h2>
+          <p>Gather food to build your score while staying out of a predator's way. The longer you survive, the faster the ocean gets.</p>
+          <div class="mission-rule"><span>01</span> Find the food</div>
+          <div class="mission-rule"><span>02</span> Avoid the sharks</div>
+          <div class="mission-rule"><span>03</span> Beat your best</div>
+        </div>
+        <div class="side-card best-card">
+          <div class="best-heading"><span class="card-label">SESSION BEST</span><span aria-hidden="true">↗</span></div>
+          <strong id="bestValue">0000</strong>
+          <p>Best score on this device</p>
+        </div>
+        <div class="side-note"><span aria-hidden="true">◈</span> Phase 2 · Core gameplay</div>
+      </aside>
+    </section>
+    <footer class="page-footer">FISH HUNT <span>·</span> A SMALL GAME, A BIG OCEAN</footer>
   </main>
+  <noscript><p class="noscript">Fish Hunt needs JavaScript enabled to run.</p></noscript>
 </body>
 </html>

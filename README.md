@@ -56,12 +56,9 @@ fish-hunt/
 └── docs/
     ├── api-investigation.md
     ├── phase-1-test-results.md
-    ├── phase-2-test-plan.md
     ├── phase-2-test-results.md
-    ├── phase-3-test-plan.md
     ├── phase-3-test-results.md
-    └── phase-3-architecture-notes.md
-```
+
 
 ## Architecture notes
 

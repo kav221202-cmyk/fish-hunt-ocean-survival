@@ -101,3 +101,21 @@ canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; outlin
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* Phase 3: game controls, effects and records */
+.game-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 15px; border-bottom: 1px solid var(--line); background: rgba(7, 24, 44, .82); }
+.active-effects { color: #a9c2d8; font-size: 10px; line-height: 1.5; }
+.toolbar-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.utility-button { padding: 7px 10px; border: 1px solid rgba(155,196,232,.2); border-radius: 8px; color: #d9eafa; background: #102945; font-size: 10px; font-weight: 700; cursor: pointer; }
+.utility-button:hover:not(:disabled) { border-color: rgba(104,224,231,.55); }
+.utility-button:disabled { opacity: .42; cursor: not-allowed; }
+.power-dot { color: #8ce8ff; }
+.stats-card > p { margin: 12px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.record-row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); color: #b5c9dc; font-size: 11px; }
+.record-row:first-of-type { margin-top: 11px; }
+.record-row strong { color: var(--cyan); font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+  .game-toolbar { align-items: flex-start; flex-direction: column; }
+  .toolbar-actions { width: 100%; }
+  .utility-button { flex: 1; }
+}

@@ -31,6 +31,13 @@
           <div class="hud-stat"><span class="hud-label">TIME LEFT</span><strong id="timeValue">60<span class="hud-unit">s</span></strong></div>
           <div class="hud-stat health-stat"><span class="hud-label">HEALTH</span><strong id="healthValue" aria-label="3 lives">♥ ♥ ♥</strong></div>
         </div>
+        <div class="game-toolbar" aria-label="Game controls">
+          <div class="active-effects" id="activeEffects" aria-live="polite">No active power-ups</div>
+          <div class="toolbar-actions">
+            <button id="pauseButton" class="utility-button" type="button" disabled aria-label="Pause game">Ⅱ Pause</button>
+            <button id="soundButton" class="utility-button" type="button" aria-pressed="false">♫ Sound off</button>
+          </div>
+        </div>
         <div class="canvas-wrap">
           <canvas id="gameCanvas" width="960" height="540" aria-label="Ocean game area" role="img"></canvas>
           <div id="gameOverlay" class="game-overlay">
@@ -49,6 +56,10 @@
           <span>Food <b class="food-dot">●</b> +10 points</span>
           <span class="footer-divider">•</span>
           <span>Shark <b class="danger-dot">●</b> −1 heart</span>
+          <span class="footer-divider">•</span>
+          <span>Power-up <b class="power-dot">◆</b> special effect</span>
+          <span class="footer-divider">•</span>
+          <span><span class="keycap">P</span> pause</span>
         </div>
         <div class="touch-controls" aria-label="Touch movement controls">
           <button type="button" data-direction="up" aria-label="Swim up">↑</button>
@@ -75,7 +86,14 @@
           <strong id="bestValue">0000</strong>
           <p>Best score on this device</p>
         </div>
-        <div class="side-note"><span aria-hidden="true">◈</span> Phase 2 · Core gameplay</div>
+        <div class="side-card stats-card">
+          <div class="best-heading"><span class="card-label">DIVE RECORD</span><span aria-hidden="true">◈</span></div>
+          <div class="record-row"><span>Rounds completed</span><strong id="roundsValue">0</strong></div>
+          <div class="record-row"><span>Food collected</span><strong id="foodValue">0</strong></div>
+          <div class="record-row"><span>Total score</span><strong id="totalScoreValue">0</strong></div>
+          <p>Saved on this browser, when storage is available.</p>
+        </div>
+        <div class="side-note"><span aria-hidden="true">◈</span> Phase 3 · Game systems</div>
       </aside>
     </section>
     <footer class="page-footer">FISH HUNT <span>·</span> A SMALL GAME, A BIG OCEAN</footer>

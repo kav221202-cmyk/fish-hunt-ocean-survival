@@ -119,3 +119,38 @@ canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; outlin
   .toolbar-actions { width: 100%; }
   .utility-button { flex: 1; }
 }
+
+
+/* Phase 4: third-party Fish Game API challenge */
+.api-card h2 { margin: 10px 0 7px; font-size: 18px; letter-spacing: -.025em; }
+.api-intro, .api-footnote { color: var(--muted); font-size: 10px; line-height: 1.65; }
+.api-load-button { width: 100%; margin-top: 8px; }
+.api-status { min-height: 28px; margin: 10px 0 0; color: #b9d5e9; font-size: 10px; line-height: 1.5; }
+.api-status[data-state="error"] { color: #ffb2a9; }
+.api-status[data-state="success"] { color: #8ce8c5; }
+.puzzle-area { margin-top: 12px; }
+.puzzle-image { display: block; width: 100%; max-height: 260px; object-fit: contain; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.puzzle-form { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 9px; margin-top: 12px; }
+.puzzle-form label { align-self: end; color: #c5d7e9; font-size: 10px; }
+.puzzle-form input { width: 100%; min-width: 0; padding: 9px; border: 1px solid rgba(155,196,232,.25); border-radius: 8px; color: #f3f8ff; background: #091d33; }
+.puzzle-form .primary-button { grid-column: 1 / -1; width: 100%; margin-top: 4px; }
+.puzzle-feedback { color: #b9d5e9; font-size: 10px; line-height: 1.55; }
+.puzzle-feedback[data-state="success"] { color: #8ce8c5; }
+.puzzle-feedback[data-state="error"] { color: #ffb2a9; }
+.api-footnote { margin-bottom: 0; font-size: 9px; }
+[hidden] { display: none !important; }
+
+
+/* Phase 6: virtual identity and browser-only authentication demonstration */
+.identity-card h2 { margin: 10px 0 7px; font-size: 18px; letter-spacing: -.025em; }
+.identity-intro, .identity-warning { color: var(--muted); font-size: 10px; line-height: 1.65; }
+.identity-form { display: grid; gap: 7px; margin-top: 12px; }
+.identity-form label { color: #c5d7e9; font-size: 10px; }
+.identity-form input { width: 100%; min-width: 0; padding: 9px; border: 1px solid rgba(155,196,232,.25); border-radius: 8px; color: #f3f8ff; background: #091d33; }
+.identity-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 5px; }
+.identity-actions .primary-button, .identity-actions .utility-button { width: 100%; min-height: 34px; padding: 7px 8px; font-size: 10px; }
+.identity-status { color: #b9d5e9; font-size: 10px; line-height: 1.55; overflow-wrap: anywhere; }
+.identity-status[data-state="success"] { color: #8ce8c5; }
+.identity-status[data-state="error"] { color: #ffb2a9; }
+.identity-logout { width: 100%; }
+.identity-warning { padding-top: 9px; border-top: 1px solid var(--line); font-size: 9px; }

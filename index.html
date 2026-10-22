@@ -72,6 +72,24 @@
       </div>
 
       <aside class="side-panel">
+        <div class="side-card identity-card" aria-labelledby="identityTitle">
+          <div class="best-heading"><span class="card-label">VIRTUAL IDENTITY</span><span aria-hidden="true">♙</span></div>
+          <h2 id="identityTitle">Player profile</h2>
+          <p class="identity-intro">Create a player profile or sign in to unlock gameplay. Use a made-up PIN for this coursework demo.</p>
+          <form id="identityForm" class="identity-form">
+            <label for="identityUsername">Username</label>
+            <input id="identityUsername" name="username" type="text" minlength="3" maxlength="20" pattern="[A-Za-z0-9_-]{3,20}" autocomplete="username" required>
+            <label for="identityPin">Demo PIN (6–12 digits)</label>
+            <input id="identityPin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6,12}" minlength="6" maxlength="12" autocomplete="current-password" required>
+            <div class="identity-actions">
+              <button class="primary-button" id="registerIdentityButton" type="button">Create profile</button>
+              <button class="utility-button" id="loginIdentityButton" type="submit">Sign in</button>
+            </div>
+          </form>
+          <p id="identityStatus" class="identity-status" role="status" aria-live="polite">Not signed in. Create a profile or sign in to unlock the game.</p>
+          <button id="logoutIdentityButton" class="utility-button identity-logout" type="button" hidden>Sign out</button>
+          <p class="identity-warning">Coursework demo only: profiles are stored in this browser. This client-side gate is not production-grade security.</p>
+        </div>
         <div class="side-card mission-card">
           <div class="card-icon">✦</div>
           <p class="card-label">YOUR MISSION</p>
@@ -80,6 +98,25 @@
           <div class="mission-rule"><span>01</span> Find the food</div>
           <div class="mission-rule"><span>02</span> Avoid the sharks</div>
           <div class="mission-rule"><span>03</span> Beat your best</div>
+        </div>
+        <div class="side-card api-card" aria-labelledby="challengeTitle">
+          <div class="best-heading"><span class="card-label">LIVE API CHALLENGE</span><span aria-hidden="true">⌁</span></div>
+          <h2 id="challengeTitle">Ocean puzzle</h2>
+          <p class="api-intro">Collect 10 food items to discover one treasure chest per dive. Solve its live Fish Game API puzzle to unlock +50 points and an 8-second shield. You can also load a practice puzzle here; practice puzzles do not trigger gameplay rewards.</p>
+          <button id="loadPuzzleButton" class="utility-button api-load-button" type="button">Load a puzzle</button>
+          <p id="apiStatus" class="api-status" role="status" aria-live="polite">Puzzle not loaded yet.</p>
+          <div id="puzzleArea" class="puzzle-area" hidden>
+            <img id="puzzleImage" class="puzzle-image" alt="Puzzle supplied by the Fish Game API" referrerpolicy="no-referrer">
+            <form id="puzzleForm" class="puzzle-form">
+              <label for="fishAnswer">Fish value</label>
+              <input id="fishAnswer" name="fishAnswer" type="number" step="1" inputmode="numeric" required autocomplete="off">
+              <label for="chestAnswer">Chest value</label>
+              <input id="chestAnswer" name="chestAnswer" type="number" step="1" inputmode="numeric" required autocomplete="off">
+              <button id="checkPuzzleButton" class="primary-button" type="submit">Check answers</button>
+            </form>
+            <p id="puzzleFeedback" class="puzzle-feedback" aria-live="polite"></p>
+          </div>
+          <p class="api-footnote">Requires a network connection. If browser access is blocked by CORS or the service is unavailable, the main survival game remains playable.</p>
         </div>
         <div class="side-card best-card">
           <div class="best-heading"><span class="card-label">SESSION BEST</span><span aria-hidden="true">↗</span></div>
@@ -93,7 +130,7 @@
           <div class="record-row"><span>Total score</span><strong id="totalScoreValue">0</strong></div>
           <p>Saved on this browser, when storage is available.</p>
         </div>
-        <div class="side-note"><span aria-hidden="true">◈</span> Phase 3 · Game systems</div>
+        <div class="side-note"><span aria-hidden="true">◈</span> Phase 6 · virtual identity &amp; authentication</div>
       </aside>
     </section>
     <footer class="page-footer">FISH HUNT <span>·</span> A SMALL GAME, A BIG OCEAN</footer>

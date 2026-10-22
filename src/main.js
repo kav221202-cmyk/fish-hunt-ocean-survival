@@ -1,7 +1,17 @@
+import { fetchFishPuzzle } from "./api/fishApi.js";
+import { emitGameEvent, onGameEvent } from "./events/gameEvents.js";
+import { getCurrentProfile, loginProfile, logoutProfile, registerProfile } from "./auth/profileAuth.js";
+
 const canvas = document.querySelector("#gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const ui = {
+  identityForm: document.querySelector("#identityForm"),
+  identityUsername: document.querySelector("#identityUsername"),
+  identityPin: document.querySelector("#identityPin"),
+  registerIdentityButton: document.querySelector("#registerIdentityButton"),
+  identityStatus: document.querySelector("#identityStatus"),
+  logoutIdentityButton: document.querySelector("#logoutIdentityButton"),
   score: document.querySelector("#scoreValue"),
   time: document.querySelector("#timeValue"),
   health: document.querySelector("#healthValue"),
@@ -19,6 +29,15 @@ const ui = {
   rounds: document.querySelector("#roundsValue"),
   food: document.querySelector("#foodValue"),
   totalScore: document.querySelector("#totalScoreValue"),
+  loadPuzzleButton: document.querySelector("#loadPuzzleButton"),
+  apiStatus: document.querySelector("#apiStatus"),
+  puzzleArea: document.querySelector("#puzzleArea"),
+  puzzleImage: document.querySelector("#puzzleImage"),
+  puzzleForm: document.querySelector("#puzzleForm"),
+  fishAnswer: document.querySelector("#fishAnswer"),
+  chestAnswer: document.querySelector("#chestAnswer"),
+  checkPuzzleButton: document.querySelector("#checkPuzzleButton"),
+  puzzleFeedback: document.querySelector("#puzzleFeedback"),
 };
 
 const CONFIG = {
@@ -33,6 +52,7 @@ const CONFIG = {
   startingSharks: 3,
   powerupSpawnSeconds: 8,
   maxPowerups: 2,
+  treasureFoodMilestone: 10,
 };
 
 const STORAGE_KEYS = {
@@ -58,6 +78,8 @@ const state = {
   sharkSpawnTimer: 0,
   powerupSpawnTimer: 0,
   foodCollectedThisRound: 0,
+  treasureChestDiscovered: false,
+  puzzleChallengeActive: false,
   roundSaved: false,
   effects: { shield: 0, slow: 0 },
   player: { x: 180, y: 270, radius: 21, invulnerable: 0, facing: 1 },
@@ -69,6 +91,9 @@ const state = {
 
 let bestScore = readBestScore();
 let stats = readStats();
+let activePuzzle = null;
+let puzzleRequestController = null;
+let puzzleRequestSequence = 0;
 
 function safeRead(key, fallback = null) {
   try {
@@ -110,9 +135,6 @@ function randomBetween(min, max) { return Math.random() * (max - min) + min; }
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 function distanceBetween(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
-function emitGameEvent(name, detail = {}) {
-  window.dispatchEvent(new CustomEvent(`fishhunt:${name}`, { detail }));
-}
 function announce(message) {
   toastMessage = message;
   toastTimer = 2.1;
@@ -183,6 +205,8 @@ function resetRound() {
   state.sharkSpawnTimer = 0;
   state.powerupSpawnTimer = 0;
   state.foodCollectedThisRound = 0;
+  state.treasureChestDiscovered = false;
+  state.puzzleChallengeActive = false;
   state.roundSaved = false;
   state.effects = { shield: 0, slow: 0 };
   state.player = { x: 180, y: CONFIG.height / 2, radius: 21, invulnerable: 0, facing: 1 };
@@ -219,6 +243,14 @@ function showOverlay({ icon, kicker, title, text, button }) {
 function hideOverlay() { ui.overlay.classList.add("hidden"); }
 
 function startGame() {
+  // Authentication is required before a round can begin or restart.
+  const profile = getCurrentProfile();
+  if (!profile) {
+    renderIdentity(null);
+    setIdentityStatus("Sign in or create a profile before playing.", "error");
+    ui.identityUsername.focus();
+    return;
+  }
   resetRound();
   keys.clear();
   heldDirections.clear();
@@ -230,6 +262,14 @@ function startGame() {
   playTone(600, 0.11);
 }
 function pauseGame() {
+  // Do not allow a signed-out player to resume an existing round.
+  if (!getCurrentProfile()) {
+    setMode("ready");
+    renderIdentity(null);
+    return;
+  }
+  // The API challenge deliberately pauses the survival loop until it is solved.
+  if (state.puzzleChallengeActive && state.mode === "paused") return;
   if (state.mode === "playing") {
     setMode("paused");
     keys.clear();
@@ -278,6 +318,7 @@ function handleKeyDown(event) {
   const supported = ["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", " ", "p", "escape"];
   if (supported.includes(key)) event.preventDefault();
   if ((key === "p" || key === "escape") && ["playing", "paused"].includes(state.mode)) {
+    if (state.puzzleChallengeActive) return;
     pauseGame();
     return;
   }
@@ -316,6 +357,12 @@ function updateFood(dt) {
       updateHud();
       playTone(680, 0.055);
       emitGameEvent("food-collected", { score: state.score, roundFood: state.foodCollectedThisRound });
+      // One treasure encounter per run: ordinary food never retriggers the API puzzle.
+      if (state.mode === "playing" && !state.treasureChestDiscovered && state.foodCollectedThisRound >= CONFIG.treasureFoodMilestone) {
+        state.treasureChestDiscovered = true;
+        beginApiPuzzleChallenge();
+        break;
+      }
     }
   }
 }
@@ -472,19 +519,203 @@ function drawScene() {
 }
 function gameLoop(timestamp) {
   if (state.mode !== "playing") return;
+  if (!getCurrentProfile()) {
+    setMode("ready");
+    renderIdentity(null);
+    return;
+  }
   const dt = Math.min((timestamp - state.lastFrame) / 1000, 0.04);
   state.lastFrame = timestamp;
   updateGame(dt);
   drawScene();
   if (state.mode === "playing") requestAnimationFrame(gameLoop);
 }
+/** Pause the survival game for its single treasure-chest API challenge. */
+function beginApiPuzzleChallenge() {
+  if (state.puzzleChallengeActive || state.treasureChestDiscovered !== true || state.mode !== "playing") return;
+  state.puzzleChallengeActive = true;
+  setMode("paused");
+  keys.clear();
+  heldDirections.clear();
+  ui.puzzleArea.hidden = false;
+  ui.puzzleFeedback.dataset.state = "info";
+  ui.puzzleFeedback.textContent = "Treasure discovered! Solve both API values to unlock it and earn +50 points and an 8-second shield. This treasure can only be claimed once per dive.";
+  showOverlay({ icon: "🧰", kicker: "TREASURE DISCOVERED", title: "Unlock the ocean chest", text: "You collected 10 food items and discovered a hidden chest. Your dive is paused while you solve one Fish Game API puzzle. Claim the reward and continue your dive.", button: "Unlock treasure below ↓" });
+  emitGameEvent("treasure-chest-discovered", { foodCollected: state.foodCollectedThisRound, score: state.score });
+  emitGameEvent("api-puzzle-challenge-started", { foodCollected: state.foodCollectedThisRound, score: state.score });
+  loadApiPuzzle();
+}
+
+/** Load a third-party puzzle through the adapter module. */
+async function loadApiPuzzle() {
+  const requestId = ++puzzleRequestSequence;
+  puzzleRequestController?.abort();
+  puzzleRequestController = new AbortController();
+  ui.loadPuzzleButton.disabled = true;
+  ui.loadPuzzleButton.textContent = "Loading puzzle…";
+  ui.apiStatus.dataset.state = "loading";
+  ui.apiStatus.textContent = "Contacting the Fish Game API…";
+  ui.puzzleFeedback.textContent = "";
+  ui.puzzleFeedback.removeAttribute("data-state");
+  ui.puzzleArea.hidden = true;
+  activePuzzle = null;
+  emitGameEvent("api-puzzle-loading", { source: "fish-game-api" });
+  const timeout = window.setTimeout(() => puzzleRequestController?.abort(), 12000);
+  try {
+    const puzzle = await fetchFishPuzzle({ signal: puzzleRequestController.signal });
+    if (requestId !== puzzleRequestSequence) return;
+    activePuzzle = puzzle;
+    ui.puzzleImage.onload = () => {
+      if (requestId === puzzleRequestSequence) {
+        ui.apiStatus.dataset.state = "success";
+        ui.apiStatus.textContent = "Puzzle loaded. Enter both values, then check your answers.";
+      }
+    };
+    ui.puzzleImage.onerror = () => {
+      if (requestId === puzzleRequestSequence) {
+        ui.apiStatus.dataset.state = "error";
+        ui.apiStatus.textContent = "Puzzle data arrived, but the image could not be displayed. Try loading another puzzle.";
+        emitGameEvent("api-puzzle-error", { code: "IMAGE_LOAD_ERROR" });
+      }
+    };
+    ui.puzzleImage.src = puzzle.question;
+    ui.puzzleArea.hidden = false;
+    ui.puzzleForm.reset();
+    ui.apiStatus.dataset.state = "loading";
+    ui.apiStatus.textContent = "Puzzle data received; loading image…";
+    emitGameEvent("api-puzzle-loaded", { source: "fish-game-api" });
+  } catch (error) {
+    if (requestId !== puzzleRequestSequence) return;
+    const message = error?.name === "AbortError"
+      ? "The request timed out or was cancelled. Try again. If this repeats, check network access and the API service."
+      : (error?.message || "Could not load a puzzle. Please try again.");
+    ui.apiStatus.dataset.state = "error";
+    ui.apiStatus.textContent = message;
+    emitGameEvent("api-puzzle-error", { code: error?.code || error?.name || "UNKNOWN_ERROR" });
+  } finally {
+    window.clearTimeout(timeout);
+    if (requestId === puzzleRequestSequence) {
+      ui.loadPuzzleButton.disabled = false;
+      ui.loadPuzzleButton.textContent = "Load another puzzle";
+    }
+  }
+}
+
+function checkApiPuzzle(event) {
+  event.preventDefault();
+  if (!activePuzzle) {
+    ui.puzzleFeedback.dataset.state = "error";
+    ui.puzzleFeedback.textContent = "Load a puzzle first.";
+    return;
+  }
+  const fish = Number(ui.fishAnswer.value);
+  const chest = Number(ui.chestAnswer.value);
+  const fishCorrect = Number.isFinite(fish) && fish === activePuzzle.fish;
+  const chestCorrect = Number.isFinite(chest) && chest === activePuzzle.chest;
+  if (fishCorrect && chestCorrect) {
+    ui.puzzleFeedback.dataset.state = "success";
+    ui.puzzleFeedback.textContent = state.puzzleChallengeActive
+      ? "Treasure unlocked! +50 points and an 8-second shield awarded. Resuming your dive…"
+      : "Both values are correct! Practice puzzle completed. It does not change your current dive rewards.";
+    ui.apiStatus.dataset.state = "success";
+    emitGameEvent("api-puzzle-solved", { correct: true, score: state.score });
+    if (soundEnabled) playTone(740, 0.12, "sine");
+    if (state.puzzleChallengeActive) {
+      state.puzzleChallengeActive = false;
+      state.score += 50;
+      state.effects.shield = Math.max(state.effects.shield, 8);
+      updateHud();
+      announce("API challenge reward · +50 points · Shield 8s");
+      emitGameEvent("api-puzzle-reward-granted", { score: state.score, shieldSeconds: 8 });
+      hideOverlay();
+      setMode("playing");
+      state.lastFrame = performance.now();
+      requestAnimationFrame(gameLoop);
+    }
+  } else {
+    ui.puzzleFeedback.dataset.state = "error";
+    const hints = [];
+    if (!fishCorrect) hints.push("fish value");
+    if (!chestCorrect) hints.push("chest value");
+    ui.puzzleFeedback.textContent = `Not quite. Check the ${hints.join(" and ")} and try again.`;
+    emitGameEvent("api-puzzle-attempt", { correct: false });
+    if (soundEnabled) playTone(220, 0.1, "triangle");
+  }
+}
+
+function setIdentityStatus(message, stateName = "") {
+  ui.identityStatus.textContent = message;
+  if (stateName) ui.identityStatus.dataset.state = stateName;
+  else delete ui.identityStatus.dataset.state;
+}
+function renderIdentity(profile = getCurrentProfile()) {
+  const authenticated = Boolean(profile);
+  ui.startButton.disabled = !authenticated;
+  if (profile) {
+    setIdentityStatus(`Signed in as ${profile.username}. You can now play.`, "success");
+    ui.identityUsername.value = profile.username;
+    ui.logoutIdentityButton.hidden = false;
+    if (state.mode === "ready") {
+      showOverlay({ icon: "🌊", kicker: "IDENTITY VERIFIED", title: "Ready to dive?",
+        text: `Welcome, ${profile.username}. Your profile is signed in. Start your 60-second survival round when you're ready.`, button: "Start swimming →" });
+    }
+  } else {
+    setIdentityStatus("Not signed in. Create a profile or sign in to unlock the game.", "error");
+    ui.logoutIdentityButton.hidden = true;
+    ui.startButton.textContent = "Sign in to play";
+    showOverlay({ icon: "🔒", kicker: "SIGN-IN REQUIRED", title: "Your dive is locked",
+      text: "Create a player profile or sign in with an existing account in the Virtual Identity panel. Gameplay stays locked until authentication succeeds.", button: "Sign in to play" });
+  }
+}
+function clearIdentityPin() { ui.identityPin.value = ""; }
+async function handleRegisterIdentity() {
+  ui.registerIdentityButton.disabled = true;
+  try {
+    const profile = await registerProfile(ui.identityUsername.value, ui.identityPin.value);
+    setIdentityStatus(`Profile created and signed in as ${profile.username}.`, "success");
+    renderIdentity(profile);
+  } catch (error) {
+    setIdentityStatus(error instanceof Error ? error.message : "Could not create the profile.", "error");
+  } finally { clearIdentityPin(); ui.registerIdentityButton.disabled = false; }
+}
+async function handleLoginIdentity(event) {
+  event.preventDefault();
+  ui.identityForm.querySelectorAll("button").forEach(button => { button.disabled = true; });
+  try {
+    const profile = await loginProfile(ui.identityUsername.value, ui.identityPin.value);
+    renderIdentity(profile);
+  } catch (error) {
+    setIdentityStatus(error instanceof Error ? error.message : "Sign in failed.", "error");
+  } finally {
+    clearIdentityPin();
+    ui.identityForm.querySelectorAll("button").forEach(button => { button.disabled = false; });
+  }
+}
+function handleLogoutIdentity() {
+  logoutProfile();
+  // Stop the current round immediately and lock the game after sign-out.
+  setMode("ready");
+  keys.clear();
+  heldDirections.clear();
+  state.puzzleChallengeActive = false;
+  if (puzzleRequestController) puzzleRequestController.abort();
+  ui.puzzleArea.hidden = true;
+  renderIdentity(null);
+  setIdentityStatus("Signed out. Sign in again to play.", "error");
+}
+
 function bindEvents() {
+  ui.registerIdentityButton.addEventListener("click", handleRegisterIdentity);
+  ui.identityForm.addEventListener("submit", handleLoginIdentity);
+  ui.logoutIdentityButton.addEventListener("click", handleLogoutIdentity);
   window.addEventListener("keydown", handleKeyDown);
   window.addEventListener("keyup", handleKeyUp);
   window.addEventListener("blur", () => { keys.clear(); heldDirections.clear(); if (state.mode === "playing") pauseGame(); });
   ui.startButton.addEventListener("click", () => state.mode === "paused" ? pauseGame() : startGame());
   ui.pauseButton.addEventListener("click", pauseGame);
   ui.soundButton.addEventListener("click", () => { setSoundPreference(!soundEnabled); if (soundEnabled) playTone(600, 0.08); });
+  ui.loadPuzzleButton.addEventListener("click", loadApiPuzzle);
+  ui.puzzleForm.addEventListener("submit", checkApiPuzzle);
   document.querySelectorAll("[data-direction]").forEach(button => {
     const direction = button.dataset.direction;
     const release = () => heldDirections.delete(direction);
@@ -492,14 +723,16 @@ function bindEvents() {
     button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release); button.addEventListener("lostpointercapture", release);
     button.addEventListener("contextmenu", event => event.preventDefault());
   });
-  window.addEventListener("fishhunt:food-collected", event => console.info(`Food collected; score ${event.detail.score}`));
-  window.addEventListener("fishhunt:player-hit", event => console.info(`Player hit; ${event.detail.lives} lives remain`));
-  window.addEventListener("fishhunt:powerup-collected", event => console.info(`Power-up collected: ${event.detail.kind}`));
+  onGameEvent("food-collected", event => console.info(`Food collected; score ${event.detail.score}`));
+  onGameEvent("player-hit", event => console.info(`Player hit; ${event.detail.lives} lives remain`));
+  onGameEvent("powerup-collected", event => console.info(`Power-up collected: ${event.detail.kind}`));
+  onGameEvent("api-puzzle-loaded", () => console.info("Fish Game API puzzle loaded"));
+  onGameEvent("api-puzzle-solved", () => console.info("Fish Game API challenge solved"));
+  onGameEvent("identity-authenticated", event => console.info(`Local demo identity authenticated: ${event.detail.username}`));
+  onGameEvent("identity-logged-out", event => console.info(`Local demo identity signed out: ${event.detail.username}`));
 }
 function initialise() {
   canvas.width = CONFIG.width; canvas.height = CONFIG.height;
-  resetRound(); bindEvents(); setSoundPreference(soundEnabled); updateHud();
-  showOverlay({ icon: "🌊", kicker: "YOUR ADVENTURE STARTS HERE", title: "Ready to dive?",
-    text: "Collect glowing food, dodge sharks, and grab special power-ups. You have 60 seconds and 3 hearts. Press P to pause during a round.", button: "Start swimming →" });
+  resetRound(); bindEvents(); setSoundPreference(soundEnabled); updateHud(); renderIdentity();
 }
 initialise();
